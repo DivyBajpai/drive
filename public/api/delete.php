@@ -1,7 +1,10 @@
 <?php
+require_once 'config.php';
+
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
+header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -14,26 +17,44 @@ if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
     exit;
 }
 
-if (!isset($_GET['file'])) {
+if (!isset($_GET['id'])) {
     http_response_code(400);
-    echo json_encode(['error' => 'Missing filename']);
+    echo json_encode(['error' => 'Missing file ID']);
     exit;
 }
 
-$storedFilename = basename($_GET['file']);
-$uploadDir = __DIR__ . '/../uploads/';
-$filePath = $uploadDir . $storedFilename;
-
-if (file_exists($filePath)) {
-    if (unlink($filePath)) {
-        http_response_code(200);
-        echo json_encode(['success' => true]);
-    } else {
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to delete file']);
+try {
+    $conn = getDbConnection();
+    
+    // Get file info first
+    $stmt = $conn->prepare("SELECT stored_filename FROM files WHERE id = :id");
+    $stmt->execute([':id' => $_GET['id']]);
+    $file = $stmt->fetch();
+    
+    if (!$file) {
+        http_response_code(404);
+        echo json_encode(['error' => 'File not found in database']);
+        exit;
     }
-} else {
-    http_response_code(404);
-    echo json_encode(['error' => 'File not found']);
+    
+    $storedFilename = basename($file['stored_filename']);
+    $uploadDir = __DIR__ . '/../uploads/';
+    $filePath = $uploadDir . $storedFilename;
+    
+    // Try to delete physical file (ignore if doesn't exist)
+    if (file_exists($filePath)) {
+        unlink($filePath);
+    }
+    
+    // Delete from database
+    $stmt = $conn->prepare("DELETE FROM files WHERE id = :id");
+    $stmt->execute([':id' => $_GET['id']]);
+    
+    http_response_code(200);
+    echo json_encode(['success' => true]);
+    
+} catch(PDOException $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
 }
 ?>

@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react';
 import { File, Download, Copy, Check, Trash2 } from 'lucide-react';
-import { supabase, FileRecord } from '../lib/supabase';
+
+interface FileRecord {
+  id: string;
+  filename: string;
+  stored_filename: string;
+  file_size: number;
+  mime_type: string;
+  share_token: string;
+  download_count: number;
+  uploaded_at: string;
+  expires_at: string | null;
+}
 
 interface FileListProps {
   refreshTrigger: number;
@@ -18,15 +29,17 @@ export default function FileList({ refreshTrigger }: FileListProps) {
   const loadFiles = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('files')
-        .select('*')
-        .order('uploaded_at', { ascending: false });
+      const response = await fetch('api/files.php');
+      const data = await response.json();
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load files');
+      }
+
       setFiles(data || []);
     } catch (error) {
       console.error('Error loading files:', error);
+      setFiles([]);
     } finally {
       setLoading(false);
     }
@@ -45,7 +58,8 @@ export default function FileList({ refreshTrigger }: FileListProps) {
   };
 
   const copyShareLink = async (token: string) => {
-    const shareUrl = `${window.location.origin}?share=${token}`;
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareUrl = `${baseUrl}?share=${token}`;
     await navigator.clipboard.writeText(shareUrl);
     setCopiedToken(token);
     setTimeout(() => setCopiedToken(null), 2000);
@@ -53,12 +67,14 @@ export default function FileList({ refreshTrigger }: FileListProps) {
 
   const downloadFile = async (storedFilename: string, originalFilename: string, shareToken: string) => {
     try {
-      await supabase
-        .from('files')
-        .update({ download_count: files.find(f => f.share_token === shareToken)!.download_count + 1 })
-        .eq('share_token', shareToken);
+      // Update download count
+      await fetch('api/update.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ share_token: shareToken })
+      });
 
-      window.location.href = `/api/download.php?file=${storedFilename}&name=${originalFilename}`;
+      window.location.href = `api/download.php?file=${storedFilename}&name=${originalFilename}`;
 
       loadFiles();
     } catch (error) {
@@ -70,21 +86,20 @@ export default function FileList({ refreshTrigger }: FileListProps) {
     if (!confirm('Are you sure you want to delete this file?')) return;
 
     try {
-      await fetch(`/api/delete.php?file=${storedFilename}`, {
+      const response = await fetch(`api/delete.php?id=${id}`, {
         method: 'DELETE',
       });
 
-      const { error } = await supabase
-        .from('files')
-        .delete()
-        .eq('id', id);
+      const data = await response.json();
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete file');
+      }
 
       loadFiles();
     } catch (error) {
       console.error('Delete error:', error);
-      alert('Failed to delete file');
+      alert('Failed to delete file from database');
     }
   };
 

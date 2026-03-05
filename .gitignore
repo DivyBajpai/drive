@@ -21,3 +21,16 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Database config with credentials
+public/api/config.php
+dist/api/config.php
+
+# Uploaded files
+public/uploads/*
+!public/uploads/.htaccess
+dist/uploads/*
+!dist/uploads/.htaccess
+
+# Misc
+*.zip

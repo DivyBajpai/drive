@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Upload, Loader2 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 
 interface FileUploadProps {
   onUploadComplete: () => void;
@@ -25,25 +24,18 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
 
       formData.append('file', file);
       formData.append('stored_filename', storedFilename);
+      formData.append('share_token', shareToken);
 
-      const response = await fetch('/api/upload.php', {
+      const response = await fetch('api/upload.php', {
         method: 'POST',
         body: formData,
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Upload failed');
+        throw new Error(data.error || 'Upload failed');
       }
-
-      const { error } = await supabase.from('files').insert({
-        filename: file.name,
-        stored_filename: storedFilename,
-        file_size: file.size,
-        mime_type: file.type || 'application/octet-stream',
-        share_token: shareToken,
-      });
-
-      if (error) throw error;
 
       onUploadComplete();
     } catch (error) {

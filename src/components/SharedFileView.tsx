@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Download, File, Loader2 } from 'lucide-react';
-import { supabase, FileRecord } from '../lib/supabase';
+
+interface FileRecord {
+  id: string;
+  filename: string;
+  stored_filename: string;
+  file_size: number;
+  mime_type: string;
+  share_token: string;
+  download_count: number;
+  uploaded_at: string;
+  expires_at: string | null;
+}
 
 interface SharedFileViewProps {
   shareToken: string;
@@ -12,22 +23,24 @@ export default function SharedFileView({ shareToken }: SharedFileViewProps) {
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
+    console.log('SharedFileView received token:', shareToken);
     loadFile();
   }, [shareToken]);
 
   const loadFile = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('files')
-        .select('*')
-        .eq('share_token', shareToken)
-        .maybeSingle();
+      const response = await fetch(`api/files.php?share_token=${shareToken}`);
+      const data = await response.json();
 
-      if (error) throw error;
-      setFile(data);
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load file');
+      }
+
+      setFile(data && data.length > 0 ? data[0] : null);
     } catch (error) {
       console.error('Error loading file:', error);
+      setFile(null);
     } finally {
       setLoading(false);
     }
@@ -46,12 +59,13 @@ export default function SharedFileView({ shareToken }: SharedFileViewProps) {
 
     setDownloading(true);
     try {
-      await supabase
-        .from('files')
-        .update({ download_count: file.download_count + 1 })
-        .eq('share_token', shareToken);
+      await fetch('api/update.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ share_token: shareToken })
+      });
 
-      window.location.href = `/api/download.php?file=${file.stored_filename}&name=${file.filename}`;
+      window.location.href = `api/download.php?file=${file.stored_filename}&name=${file.filename}`;
     } catch (error) {
       console.error('Download error:', error);
       alert('Failed to download file');

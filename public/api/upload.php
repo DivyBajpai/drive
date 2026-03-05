@@ -1,7 +1,10 @@
 <?php
+require_once 'config.php';
+
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
+header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -14,26 +17,71 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-if (!isset($_FILES['file']) || !isset($_POST['stored_filename'])) {
+if (!isset($_FILES['file']) || !isset($_POST['stored_filename']) || !isset($_POST['share_token'])) {
     http_response_code(400);
-    echo json_encode(['error' => 'Missing file or filename']);
+    echo json_encode(['error' => 'Missing required parameters']);
     exit;
 }
 
 $uploadDir = __DIR__ . '/../uploads/';
 
 if (!is_dir($uploadDir)) {
-    mkdir($uploadDir, 0755, true);
+    if (!mkdir($uploadDir, 0755, true)) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to create uploads directory']);
+        exit;
+    }
+}
+
+if (!is_writable($uploadDir)) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Uploads directory is not writable', 'path' => $uploadDir]);
+    exit;
 }
 
 $storedFilename = basename($_POST['stored_filename']);
 $targetPath = $uploadDir . $storedFilename;
 
 if (move_uploaded_file($_FILES['file']['tmp_name'], $targetPath)) {
-    http_response_code(200);
-    echo json_encode(['success' => true, 'filename' => $storedFilename]);
+    // File uploaded successfully, now save to database
+    try {
+        $conn = getDbConnection();
+        
+        $stmt = $conn->prepare("
+            INSERT INTO files (id, filename, stored_filename, file_size, mime_type, share_token, download_count)
+            VALUES (:id, :filename, :stored_filename, :file_size, :mime_type, :share_token, 0)
+        ");
+        
+        $id = generateUUID();
+        $filename = $_FILES['file']['name'];
+        $fileSize = $_FILES['file']['size'];
+        $mimeType = $_FILES['file']['type'] ?: 'application/octet-stream';
+        $shareToken = basename($_POST['share_token']);
+        
+        $stmt->execute([
+            ':id' => $id,
+            ':filename' => $filename,
+            ':stored_filename' => $storedFilename,
+            ':file_size' => $fileSize,
+            ':mime_type' => $mimeType,
+            ':share_token' => $shareToken
+        ]);
+        
+        http_response_code(200);
+        echo json_encode([
+            'success' => true,
+            'filename' => $storedFilename,
+            'id' => $id
+        ]);
+    } catch(PDOException $e) {
+        // Database error - delete uploaded file
+        unlink($targetPath);
+        http_response_code(500);
+        echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+    }
 } else {
+    $error = error_get_last();
     http_response_code(500);
-    echo json_encode(['error' => 'Failed to save file']);
+    echo json_encode(['error' => 'Failed to save file', 'details' => $error, 'target' => $targetPath]);
 }
 ?>

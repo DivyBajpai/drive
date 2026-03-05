@@ -9,8 +9,11 @@ function App() {
   const [shareToken, setShareToken] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('Full URL:', window.location.href);
+    console.log('Search params:', window.location.search);
     const params = new URLSearchParams(window.location.search);
     const token = params.get('share');
+    console.log('Share token:', token);
     if (token) {
       setShareToken(token);
     }
