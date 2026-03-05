@@ -1,0 +1,5 @@
+Options -Indexes
+php_flag display_errors Off
+php_value upload_max_filesize 100M
+php_value post_max_size 100M
+php_value max_execution_time 300
