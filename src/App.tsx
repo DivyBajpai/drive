@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Share2, LogOut, Users, Files, UserCheck, BarChart3, Trash2 } from 'lucide-react';
+import { Share2, LogOut, Users, Files, UserCheck, BarChart3, Trash2, Star, Activity, Tag } from 'lucide-react';
 import FileUpload from './components/FileUpload';
 import FolderView from './components/FolderView';
 import SharedFileView from './components/SharedFileView';
@@ -11,9 +11,12 @@ import AnalyticsDashboard from './components/AnalyticsDashboard';
 import StorageQuota from './components/StorageQuota';
 import Search from './components/Search';
 import TrashBin from './components/TrashBin';
+import FavoritesView from './components/FavoritesView';
+import ActivityFeed from './components/ActivityFeed';
+import TagsManager from './components/TagsManager';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-type TabType = 'files' | 'shared' | 'analytics' | 'trash' | 'admin';
+type TabType = 'files' | 'shared' | 'favorites' | 'activity' | 'tags' | 'analytics' | 'trash' | 'admin';
 
 function AppContent() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -121,6 +124,17 @@ function AppContent() {
               My Files
             </button>
             <button
+              onClick={() => setActiveTab('favorites')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
+                activeTab === 'favorites'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Star className="w-4 h-4" />
+              Favorites
+            </button>
+            <button
               onClick={() => setActiveTab('shared')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
                 activeTab === 'shared'
@@ -129,7 +143,29 @@ function AppContent() {
               }`}
             >
               <UserCheck className="w-4 h-4" />
-              Shared with Me
+              Shared
+            </button>
+            <button
+              onClick={() => setActiveTab('tags')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
+                activeTab === 'tags'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Tag className="w-4 h-4" />
+              Tags
+            </button>
+            <button
+              onClick={() => setActiveTab('activity')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
+                activeTab === 'activity'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Activity className="w-4 h-4" />
+              Activity
             </button>
             <button
               onClick={() => setActiveTab('analytics')}
@@ -191,9 +227,21 @@ function AppContent() {
               <FolderView refreshTrigger={refreshTrigger} initialFolderId={initialFolderId} />
             </section>
           </div>
+        ) : activeTab === 'favorites' ? (
+          <section className="bg-white rounded-lg shadow-lg p-6">
+            <FavoritesView />
+          </section>
         ) : activeTab === 'shared' ? (
           <section className="bg-white rounded-lg shadow-lg p-6">
             <SharedWithMe />
+          </section>
+        ) : activeTab === 'tags' ? (
+          <section className="bg-white rounded-lg shadow-lg p-6">
+            <TagsManager />
+          </section>
+        ) : activeTab === 'activity' ? (
+          <section className="bg-white rounded-lg shadow-lg p-6">
+            <ActivityFeed />
           </section>
         ) : activeTab === 'analytics' ? (
           <section className="bg-white rounded-lg shadow-lg p-6">
