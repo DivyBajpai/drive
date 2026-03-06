@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Share2, LogOut, Users, Files } from 'lucide-react';
+import { Share2, LogOut, Users, Files, UserCheck } from 'lucide-react';
 import FileUpload from './components/FileUpload';
 import FolderView from './components/FolderView';
 import SharedFileView from './components/SharedFileView';
 import SharedFolderView from './components/SharedFolderView';
+import SharedWithMe from './components/SharedWithMe';
 import Login from './components/Login';
 import AdminPanel from './components/AdminPanel';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-type TabType = 'files' | 'admin';
+type TabType = 'files' | 'shared' | 'admin';
 
 function AppContent() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -95,20 +96,31 @@ function AppContent() {
             </button>
           </div>
 
-          {/* Tabs for Admin */}
-          {user.is_admin && (
-            <div className="mt-6 flex justify-center gap-2">
-              <button
-                onClick={() => setActiveTab('files')}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
-                  activeTab === 'files'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <Files className="w-5 h-5" />
-                My Files
-              </button>
+          {/* Tabs */}
+          <div className="mt-6 flex justify-center gap-2">
+            <button
+              onClick={() => setActiveTab('files')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+                activeTab === 'files'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Files className="w-5 h-5" />
+              My Files
+            </button>
+            <button
+              onClick={() => setActiveTab('shared')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+                activeTab === 'shared'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <UserCheck className="w-5 h-5" />
+              Shared with Me
+            </button>
+            {user.is_admin && (
               <button
                 onClick={() => setActiveTab('admin')}
                 className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
@@ -120,8 +132,8 @@ function AppContent() {
                 <Users className="w-5 h-5" />
                 User Management
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </header>
 
         {activeTab === 'files' ? (
@@ -136,6 +148,10 @@ function AppContent() {
               <FolderView refreshTrigger={refreshTrigger} />
             </section>
           </div>
+        ) : activeTab === 'shared' ? (
+          <section className="bg-white rounded-lg shadow-lg p-6">
+            <SharedWithMe />
+          </section>
         ) : (
           <section className="bg-white rounded-lg shadow-lg p-6">
             <AdminPanel />

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { 
   Folder, 
   File, 
-  Download, 
   Copy, 
   Check, 
   Trash2, 
@@ -10,8 +9,10 @@ import {
   FolderPlus, 
   Home,
   ChevronRight,
-  Share2
+  Share2,
+  Users
 } from 'lucide-react';
+import ShareModal from './ShareModal';
 
 const API_BASE = 'https://origincreativeagency.com/newcloud/api';
 
@@ -54,6 +55,9 @@ export default function FolderView({ refreshTrigger }: FolderViewProps) {
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [showRenameFolder, setShowRenameFolder] = useState<FolderRecord | null>(null);
   const [folderName, setFolderName] = useState('');
+  
+  // Internal sharing
+  const [shareItem, setShareItem] = useState<{ type: 'file' | 'folder', id: string, name: string } | null>(null);
 
   useEffect(() => {
     loadFolderContents(currentFolderId);
@@ -340,10 +344,20 @@ export default function FolderView({ refreshTrigger }: FolderViewProps) {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        setShareItem({ type: 'folder', id: folder.id, name: folder.name });
+                      }}
+                      className="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                      title="Share with users"
+                    >
+                      <Users className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
                         handleShareFolder(folder);
                       }}
                       className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors"
-                      title="Share folder"
+                      title="Copy public link"
                     >
                       {copiedToken === folder.shared_token ? (
                         <Check className="w-4 h-4" />
@@ -396,9 +410,16 @@ export default function FolderView({ refreshTrigger }: FolderViewProps) {
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <button
+                      onClick={() => setShareItem({ type: 'file', id: file.id, name: file.filename })}
+                      className="p-2 text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                      title="Share with users"
+                    >
+                      <Users className="w-5 h-5" />
+                    </button>
+                    <button
                       onClick={() => copyShareLink(file.shared_token)}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                      title="Copy share link"
+                      title="Copy public link"
                     >
                       {copiedToken === file.shared_token ? (
                         <Check className="w-5 h-5 text-green-600" />
@@ -501,6 +522,16 @@ export default function FolderView({ refreshTrigger }: FolderViewProps) {
             </form>
           </div>
         </div>
+      )}
+      
+      {/* Share Modal */}
+      {shareItem && (
+        <ShareModal
+          resourceType={shareItem.type}
+          resourceId={shareItem.id}
+          resourceName={shareItem.name}
+          onClose={() => setShareItem(null)}
+        />
       )}
     </div>
   );

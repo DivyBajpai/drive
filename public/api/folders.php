@@ -23,6 +23,27 @@ if (!$user) {
 
 $userId = $user['user_id'];
 
+// Helper function to check if user has access to a folder
+function hasAccessToFolder($conn, $folderId, $userId) {
+    // Check if user owns the folder
+    $stmt = $conn->prepare("SELECT user_id FROM folders WHERE id = ?");
+    $stmt->execute([$folderId]);
+    $folder = $stmt->fetch();
+    
+    if ($folder && $folder['user_id'] === $userId) {
+        return true;
+    }
+    
+    // Check if folder is shared with user
+    $stmt = $conn->prepare("
+        SELECT id FROM shares 
+        WHERE resource_type = 'folder' AND resource_id = ? AND shared_with_id = ?
+    ");
+    $stmt->execute([$folderId, $userId]);
+    
+    return $stmt->fetch() !== false;
+}
+
 try {
     // GET: List folders and files in a specific folder (or root)
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -30,12 +51,8 @@ try {
         
         // Get folders in current location
         if ($folderId) {
-            // Verify user owns this folder
-            $stmt = $conn->prepare("SELECT user_id FROM folders WHERE id = ?");
-            $stmt->execute([$folderId]);
-            $folder = $stmt->fetch();
-            
-            if (!$folder || $folder['user_id'] !== $userId) {
+            // Verify user has access to this folder
+            if (!hasAccessToFolder($conn, $folderId, $userId)) {
                 http_response_code(403);
                 echo json_encode(['error' => 'Access denied']);
                 exit;
