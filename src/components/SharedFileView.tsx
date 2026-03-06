@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Download, File, Loader2 } from 'lucide-react';
 
+const API_BASE = 'https://origincreativeagency.com/newcloud/api';
+
 interface FileRecord {
   id: string;
   filename: string;
@@ -30,7 +32,7 @@ export default function SharedFileView({ shareToken }: SharedFileViewProps) {
   const loadFile = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`api/files.php?share_token=${shareToken}`);
+      const response = await fetch(`${API_BASE}/files.php?share_token=${shareToken}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -59,13 +61,13 @@ export default function SharedFileView({ shareToken }: SharedFileViewProps) {
 
     setDownloading(true);
     try {
-      await fetch('api/update.php', {
+      await fetch(`${API_BASE}/update.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ share_token: shareToken })
       });
 
-      window.location.href = `api/download.php?file=${file.stored_filename}&name=${file.filename}`;
+      window.location.href = `${API_BASE}/download.php?file=${file.stored_filename}&name=${file.filename}`;
     } catch (error) {
       console.error('Download error:', error);
       alert('Failed to download file');

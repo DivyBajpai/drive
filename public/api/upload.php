@@ -3,7 +3,7 @@ require_once 'config.php';
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -14,6 +14,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['error' => 'Method not allowed']);
+    exit;
+}
+
+// Check authentication
+$conn = getDbConnection();
+$user = getCurrentUser($conn);
+
+if (!$user) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthorized']);
     exit;
 }
 
@@ -45,11 +55,9 @@ $targetPath = $uploadDir . $storedFilename;
 if (move_uploaded_file($_FILES['file']['tmp_name'], $targetPath)) {
     // File uploaded successfully, now save to database
     try {
-        $conn = getDbConnection();
-        
         $stmt = $conn->prepare("
-            INSERT INTO files (id, filename, stored_filename, file_size, mime_type, share_token, download_count)
-            VALUES (:id, :filename, :stored_filename, :file_size, :mime_type, :share_token, 0)
+            INSERT INTO files (id, user_id, filename, stored_filename, file_size, mime_type, share_token, download_count)
+            VALUES (:id, :user_id, :filename, :stored_filename, :file_size, :mime_type, :share_token, 0)
         ");
         
         $id = generateUUID();
@@ -60,6 +68,7 @@ if (move_uploaded_file($_FILES['file']['tmp_name'], $targetPath)) {
         
         $stmt->execute([
             ':id' => $id,
+            ':user_id' => $user['user_id'],
             ':filename' => $filename,
             ':stored_filename' => $storedFilename,
             ':file_size' => $fileSize,

@@ -5,6 +5,8 @@ interface FileUploadProps {
   onUploadComplete: () => void;
 }
 
+const API_BASE = 'https://origincreativeagency.com/newcloud/api';
+
 export default function FileUpload({ onUploadComplete }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -26,8 +28,15 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
       formData.append('stored_filename', storedFilename);
       formData.append('share_token', shareToken);
 
-      const response = await fetch('api/upload.php', {
+      const sessionToken = localStorage.getItem('session_token');
+      const headers: HeadersInit = {};
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
+
+      const response = await fetch(`${API_BASE}/upload.php`, {
         method: 'POST',
+        headers,
         body: formData,
       });
 

@@ -3,7 +3,7 @@ require_once 'config.php';
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -19,8 +19,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 try {
     $conn = getDbConnection();
+    $user = getCurrentUser($conn);
     
-    // Check if getting a single file by share token
+    // Check if getting a single file by share token (public access)
     if (isset($_GET['share_token'])) {
         $stmt = $conn->prepare("SELECT * FROM files WHERE share_token = :share_token LIMIT 1");
         $stmt->execute([':share_token' => $_GET['share_token']]);
@@ -34,8 +35,15 @@ try {
             echo json_encode(['error' => 'File not found']);
         }
     } else {
-        // Get all files, ordered by upload date
-        $stmt = $conn->query("SELECT * FROM files ORDER BY uploaded_at DESC");
+        // Get user's files - requires authentication
+        if (!$user) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Unauthorized']);
+            exit;
+        }
+        
+        $stmt = $conn->prepare("SELECT * FROM files WHERE user_id = :user_id ORDER BY uploaded_at DESC");
+        $stmt->execute([':user_id' => $user['user_id']]);
         $files = $stmt->fetchAll();
         
         http_response_code(200);

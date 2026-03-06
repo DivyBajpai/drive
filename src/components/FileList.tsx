@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { File, Download, Copy, Check, Trash2 } from 'lucide-react';
 
+const API_BASE = 'https://origincreativeagency.com/newcloud/api';
+
 interface FileRecord {
   id: string;
   filename: string;
@@ -29,7 +31,13 @@ export default function FileList({ refreshTrigger }: FileListProps) {
   const loadFiles = async () => {
     setLoading(true);
     try {
-      const response = await fetch('api/files.php');
+      const sessionToken = localStorage.getItem('session_token');
+      const headers: HeadersInit = {};
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
+
+      const response = await fetch(`${API_BASE}/files.php`, { headers });
       const data = await response.json();
 
       if (!response.ok) {
@@ -68,13 +76,13 @@ export default function FileList({ refreshTrigger }: FileListProps) {
   const downloadFile = async (storedFilename: string, originalFilename: string, shareToken: string) => {
     try {
       // Update download count
-      await fetch('api/update.php', {
+      await fetch(`${API_BASE}/update.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ share_token: shareToken })
       });
 
-      window.location.href = `api/download.php?file=${storedFilename}&name=${originalFilename}`;
+      window.location.href = `${API_BASE}/download.php?file=${storedFilename}&name=${originalFilename}`;
 
       loadFiles();
     } catch (error) {
@@ -86,8 +94,15 @@ export default function FileList({ refreshTrigger }: FileListProps) {
     if (!confirm('Are you sure you want to delete this file?')) return;
 
     try {
-      const response = await fetch(`api/delete.php?id=${id}`, {
+      const sessionToken = localStorage.getItem('session_token');
+      const headers: HeadersInit = {};
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
+
+      const response = await fetch(`${API_BASE}/delete.php?id=${id}`, {
         method: 'DELETE',
+        headers,
       });
 
       const data = await response.json();

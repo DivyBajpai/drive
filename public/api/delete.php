@@ -3,7 +3,7 @@ require_once 'config.php';
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -17,6 +17,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
     exit;
 }
 
+// Check authentication
+$conn = getDbConnection();
+$user = getCurrentUser($conn);
+
+if (!$user) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthorized']);
+    exit;
+}
+
 if (!isset($_GET['id'])) {
     http_response_code(400);
     echo json_encode(['error' => 'Missing file ID']);
@@ -24,16 +34,21 @@ if (!isset($_GET['id'])) {
 }
 
 try {
-    $conn = getDbConnection();
-    
-    // Get file info first
-    $stmt = $conn->prepare("SELECT stored_filename FROM files WHERE id = :id");
+    // Get file info first and check ownership
+    $stmt = $conn->prepare("SELECT stored_filename, user_id FROM files WHERE id = :id");
     $stmt->execute([':id' => $_GET['id']]);
     $file = $stmt->fetch();
     
     if (!$file) {
         http_response_code(404);
         echo json_encode(['error' => 'File not found in database']);
+        exit;
+    }
+    
+    // Check if user owns the file
+    if ($file['user_id'] !== $user['user_id']) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Forbidden: You do not own this file']);
         exit;
     }
     
