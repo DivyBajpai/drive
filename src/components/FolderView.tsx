@@ -10,9 +10,11 @@ import {
   Home,
   ChevronRight,
   Share2,
-  Users
+  Users,
+  Eye
 } from 'lucide-react';
 import ShareModal from './ShareModal';
+import FilePreview from './FilePreview';
 
 const API_BASE = 'https://origincreativeagency.com/newcloud/api';
 
@@ -59,6 +61,9 @@ export default function FolderView({ refreshTrigger, initialFolderId }: FolderVi
   
   // Internal sharing
   const [shareItem, setShareItem] = useState<{ type: 'file' | 'folder', id: string, name: string } | null>(null);
+  
+  // File preview
+  const [previewFile, setPreviewFile] = useState<{ id: string, filename: string, mimetype: string } | null>(null);
 
   // Update currentFolderId if initialFolderId changes
   useEffect(() => {
@@ -418,6 +423,13 @@ export default function FolderView({ refreshTrigger, initialFolderId }: FolderVi
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <button
+                      onClick={() => setPreviewFile({ id: file.id, filename: file.filename, mimetype: file.mimetype })}
+                      className="p-2 text-green-600 hover:bg-green-50 rounded transition-colors"
+                      title="Preview file"
+                    >
+                      <Eye className="w-5 h-5" />
+                    </button>
+                    <button
                       onClick={() => setShareItem({ type: 'file', id: file.id, name: file.filename })}
                       className="p-2 text-purple-600 hover:bg-purple-50 rounded transition-colors"
                       title="Share with users"
@@ -539,6 +551,16 @@ export default function FolderView({ refreshTrigger, initialFolderId }: FolderVi
           resourceId={shareItem.id}
           resourceName={shareItem.name}
           onClose={() => setShareItem(null)}
+        />
+      )}
+      
+      {/* File Preview Modal */}
+      {previewFile && (
+        <FilePreview
+          fileId={previewFile.id}
+          filename={previewFile.filename}
+          mimeType={previewFile.mimetype}
+          onClose={() => setPreviewFile(null)}
         />
       )}
     </div>

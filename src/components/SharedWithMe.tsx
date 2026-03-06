@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Download, File, Folder, User } from 'lucide-react';
+import { Download, File, Folder, User, Eye } from 'lucide-react';
+import FilePreview from './FilePreview';
 
 const API_BASE = 'https://origincreativeagency.com/newcloud/api';
 
@@ -30,6 +31,7 @@ export default function SharedWithMe() {
   const [files, setFiles] = useState<SharedFile[]>([]);
   const [folders, setFolders] = useState<SharedFolder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previewFile, setPreviewFile] = useState<{ id: string, filename: string, mimeType: string } | null>(null);
 
   useEffect(() => {
     loadSharedItems();
@@ -236,13 +238,22 @@ export default function SharedWithMe() {
                         {formatDate(file.shared_at)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => handleDownloadFile(file.id, file.filename)}
-                          className="text-blue-600 hover:text-blue-900 inline-flex items-center gap-1"
-                        >
-                          <Download className="w-4 h-4" />
-                          Download
-                        </button>
+                        <div className="flex items-center justify-end gap-3">
+                          <button
+                            onClick={() => setPreviewFile({ id: file.id, filename: file.filename, mimeType: file.mime_type })}
+                            className="text-green-600 hover:text-green-900 inline-flex items-center gap-1"
+                          >
+                            <Eye className="w-4 h-4" />
+                            Preview
+                          </button>
+                          <button
+                            onClick={() => handleDownloadFile(file.id, file.filename)}
+                            className="text-blue-600 hover:text-blue-900 inline-flex items-center gap-1"
+                          >
+                            <Download className="w-4 h-4" />
+                            Download
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -266,6 +277,16 @@ export default function SharedWithMe() {
             Items that others share with you will appear here
           </p>
         </div>
+      )}
+      
+      {/* File Preview Modal */}
+      {previewFile && (
+        <FilePreview
+          fileId={previewFile.id}
+          filename={previewFile.filename}
+          mimeType={previewFile.mimeType}
+          onClose={() => setPreviewFile(null)}
+        />
       )}
     </div>
   );
