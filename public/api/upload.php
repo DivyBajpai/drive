@@ -33,6 +33,22 @@ if (!isset($_FILES['file']) || !isset($_POST['stored_filename']) || !isset($_POS
     exit;
 }
 
+// Get folder_id if provided
+$folderId = isset($_POST['folder_id']) && $_POST['folder_id'] !== '' ? $_POST['folder_id'] : null;
+
+// Verify folder ownership if folder is specified
+if ($folderId) {
+    $stmt = $conn->prepare("SELECT user_id FROM folders WHERE id = ?");
+    $stmt->execute([$folderId]);
+    $folder = $stmt->fetch();
+    
+    if (!$folder || $folder['user_id'] !== $user['user_id']) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Invalid folder or access denied']);
+        exit;
+    }
+}
+
 $uploadDir = __DIR__ . '/../uploads/';
 
 if (!is_dir($uploadDir)) {
@@ -56,8 +72,8 @@ if (move_uploaded_file($_FILES['file']['tmp_name'], $targetPath)) {
     // File uploaded successfully, now save to database
     try {
         $stmt = $conn->prepare("
-            INSERT INTO files (id, user_id, filename, stored_filename, file_size, mime_type, share_token, download_count)
-            VALUES (:id, :user_id, :filename, :stored_filename, :file_size, :mime_type, :share_token, 0)
+            INSERT INTO files (id, user_id, folder_id, filename, stored_filename, file_size, mime_type, share_token, download_count)
+            VALUES (:id, :user_id, :folder_id, :filename, :stored_filename, :file_size, :mime_type, :share_token, 0)
         ");
         
         $id = generateUUID();
@@ -69,6 +85,7 @@ if (move_uploaded_file($_FILES['file']['tmp_name'], $targetPath)) {
         $stmt->execute([
             ':id' => $id,
             ':user_id' => $user['user_id'],
+            ':folder_id' => $folderId,
             ':filename' => $filename,
             ':stored_filename' => $storedFilename,
             ':file_size' => $fileSize,

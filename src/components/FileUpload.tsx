@@ -27,6 +27,12 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
       formData.append('file', file);
       formData.append('stored_filename', storedFilename);
       formData.append('share_token', shareToken);
+      
+      // Add current folder ID if available
+      const currentFolderId = (window as any).currentFolderId;
+      if (currentFolderId) {
+        formData.append('folder_id', currentFolderId);
+      }
 
       const sessionToken = localStorage.getItem('session_token');
       const headers: HeadersInit = {};

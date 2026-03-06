@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Share2, LogOut, Users, Files } from 'lucide-react';
 import FileUpload from './components/FileUpload';
-import FileList from './components/FileList';
+import FolderView from './components/FolderView';
 import SharedFileView from './components/SharedFileView';
+import SharedFolderView from './components/SharedFolderView';
 import Login from './components/Login';
 import AdminPanel from './components/AdminPanel';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -12,6 +13,7 @@ type TabType = 'files' | 'admin';
 function AppContent() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [shareToken, setShareToken] = useState<string | null>(null);
+  const [folderToken, setFolderToken] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('files');
   const { user, loading, logout } = useAuth();
 
@@ -19,10 +21,15 @@ function AppContent() {
     console.log('Full URL:', window.location.href);
     console.log('Search params:', window.location.search);
     const params = new URLSearchParams(window.location.search);
-    const token = params.get('share');
-    console.log('Share token:', token);
-    if (token) {
-      setShareToken(token);
+    const shareParam = params.get('share');
+    const folderParam = params.get('folder');
+    console.log('Share token:', shareParam);
+    console.log('Folder token:', folderParam);
+    if (shareParam) {
+      setShareToken(shareParam);
+    }
+    if (folderParam) {
+      setFolderToken(folderParam);
     }
   }, []);
 
@@ -37,6 +44,11 @@ function AppContent() {
   // Show shared file view if share token exists (public access)
   if (shareToken) {
     return <SharedFileView shareToken={shareToken} />;
+  }
+
+  // Show shared folder view if folder token exists (public access)
+  if (folderToken) {
+    return <SharedFolderView folderToken={folderToken} />;
   }
 
   // Show loading state
@@ -121,7 +133,7 @@ function AppContent() {
 
             <section className="bg-white rounded-lg shadow-lg p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Your Files</h2>
-              <FileList refreshTrigger={refreshTrigger} />
+              <FolderView refreshTrigger={refreshTrigger} />
             </section>
           </div>
         ) : (
