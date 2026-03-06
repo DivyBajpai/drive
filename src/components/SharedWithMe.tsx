@@ -82,7 +82,10 @@ export default function SharedWithMe() {
   };
 
   const handleOpenFolder = (folderId: string) => {
-    window.location.href = `/?folderId=${folderId}`;
+    // Navigate to current URL with folderId parameter
+    const url = new URL(window.location.href);
+    url.search = `?folderId=${folderId}`;
+    window.location.href = url.href;
   };
 
   const formatFileSize = (bytes: number): string => {
