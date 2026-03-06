@@ -54,7 +54,7 @@ try {
         // Get files in current location
         if ($folderId) {
             $stmt = $conn->prepare("
-                SELECT id, filename, filesize, mimetype, shared_token, uploaded_at 
+                SELECT id, filename, file_size as filesize, mime_type as mimetype, share_token as shared_token, uploaded_at 
                 FROM files 
                 WHERE folder_id = ? AND user_id = ? 
                 ORDER BY uploaded_at DESC
@@ -63,7 +63,7 @@ try {
         } else {
             // Root level files (no folder)
             $stmt = $conn->prepare("
-                SELECT id, filename, filesize, mimetype, shared_token, uploaded_at 
+                SELECT id, filename, file_size as filesize, mime_type as mimetype, share_token as shared_token, uploaded_at 
                 FROM files 
                 WHERE folder_id IS NULL AND user_id = ? 
                 ORDER BY uploaded_at DESC
@@ -241,11 +241,13 @@ try {
             $allFiles = [];
             
             // Get files directly in this folder
-            $stmt = $conn->prepare("SELECT filepath FROM files WHERE folder_id = ?");
+            $stmt = $conn->prepare("SELECT stored_filename FROM files WHERE folder_id = ?");
             $stmt->execute([$folderId]);
             $files = $stmt->fetchAll();
             foreach ($files as $file) {
-                $allFiles[] = $file['filepath'];
+                // Construct full path to uploaded file
+                $filepath = __DIR__ . '/../uploads/' . $file['stored_filename'];
+                $allFiles[] = $filepath;
             }
             
             // Get subfolders

@@ -42,7 +42,7 @@ try {
             
             // Get files directly in this folder
             $stmt = $conn->prepare("
-                SELECT id, filename, filesize, mimetype, shared_token, uploaded_at 
+                SELECT id, filename, file_size as filesize, mime_type as mimetype, share_token as shared_token, uploaded_at 
                 FROM files 
                 WHERE folder_id = ? 
                 ORDER BY uploaded_at DESC
