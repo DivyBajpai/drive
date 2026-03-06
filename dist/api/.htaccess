@@ -1,0 +1,16 @@
+Options -Indexes
+php_flag display_errors Off
+php_value upload_max_filesize 100M
+php_value post_max_size 100M
+php_value max_execution_time 300
+
+# Allow PHP files to be executed
+<FilesMatch "\.php$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
+
+# Disable ModSecurity for this directory if it's causing issues
+<IfModule mod_security.c>
+    SecRuleEngine Off
+</IfModule>
