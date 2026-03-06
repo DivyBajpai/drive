@@ -11,12 +11,21 @@ import {
   ChevronRight,
   Share2,
   Users,
-  Eye
+  Eye,
+  Tag,
+  Star
 } from 'lucide-react';
 import ShareModal from './ShareModal';
 import FilePreview from './FilePreview';
+import TagAssignment from './TagAssignment';
 
 const API_BASE = 'https://origincreativeagency.com/newcloud/api';
+
+interface TagItem {
+  id: string;
+  name: string;
+  color: string;
+}
 
 interface FileRecord {
   id: string;
@@ -25,6 +34,8 @@ interface FileRecord {
   mimetype: string;
   shared_token: string;
   uploaded_at: string;
+  is_favorite?: number;
+  tags?: TagItem[];
 }
 
 interface FolderRecord {
@@ -34,6 +45,7 @@ interface FolderRecord {
   parent_folder_id: string | null;
   shared_token: string | null;
   created_at: string;
+  is_favorite?: number;
 }
 
 interface Breadcrumb {
@@ -64,6 +76,9 @@ export default function FolderView({ refreshTrigger, initialFolderId }: FolderVi
   
   // File preview
   const [previewFile, setPreviewFile] = useState<{ id: string, filename: string, mimetype: string } | null>(null);
+  
+  // Tag assignment
+  const [tagAssignmentFile, setTagAssignmentFile] = useState<{ id: string, name: string } | null>(null);
 
   // Update currentFolderId if initialFolderId changes
   useEffect(() => {
@@ -96,7 +111,25 @@ export default function FolderView({ refreshTrigger, initialFolderId }: FolderVi
 
       const data = await response.json();
       setFolders(data.folders || []);
-      setFiles(data.files || []);
+      
+      // Load tags for each file
+      const filesWithTags = await Promise.all(
+        (data.files || []).map(async (file: FileRecord) => {
+          try {
+            const tagResponse = await fetch(`${API_BASE}/tags.php?file_id=${file.id}`, {
+              headers: { 'Authorization': `Bearer ${sessionToken}` },
+            });
+            if (tagResponse.ok) {
+              file.tags = await tagResponse.json();
+            }
+          } catch (err) {
+            file.tags = [];
+          }
+          return file;
+        })
+      );
+      
+      setFiles(filesWithTags);
       setBreadcrumbs(data.breadcrumbs || []);
     } catch (error) {
       console.error('Error loading folder:', error);
@@ -267,6 +300,32 @@ export default function FolderView({ refreshTrigger, initialFolderId }: FolderVi
     setCopiedToken(token);
     setTimeout(() => setCopiedToken(null), 2000);
   };
+  
+  const toggleFavorite = async (type: 'file' | 'folder', id: string, currentValue: boolean) => {
+    try {
+      const sessionToken = localStorage.getItem('session_token');
+      const response = await fetch(`${API_BASE}/favorites.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`,
+        },
+        body: JSON.stringify({
+          resource_type: type,
+          resource_id: id,
+          is_favorite: !currentValue,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update favorite');
+      }
+
+      loadFolderContents(currentFolderId);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to update favorite');
+    }
+  };
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -357,6 +416,16 @@ export default function FolderView({ refreshTrigger, initialFolderId }: FolderVi
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        toggleFavorite('folder', folder.id, !!folder.is_favorite);
+                      }}
+                      className="p-1.5 text-yellow-600 hover:bg-yellow-50 rounded transition-colors"
+                      title={folder.is_favorite ? "Remove from favorites" : "Add to favorites"}
+                    >
+                      <Star className={`w-4 h-4 ${folder.is_favorite ? 'fill-yellow-500' : ''}`} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setShareItem({ type: 'folder', id: folder.id, name: folder.name });
                       }}
                       className="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition-colors"
@@ -416,10 +485,24 @@ export default function FolderView({ refreshTrigger, initialFolderId }: FolderVi
                       <File className="w-5 h-5 text-blue-500 flex-shrink-0" />
                       <h3 className="font-medium text-gray-900 truncate">{file.filename}</h3>
                     </div>
-                    <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-2">
                       <span>{formatFileSize(file.filesize)}</span>
                       <span>{formatDate(file.uploaded_at)}</span>
                     </div>
+                    {file.tags && file.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {file.tags.map((tag) => (
+                          <span
+                            key={tag.id}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
+                            style={{ backgroundColor: tag.color }}
+                          >
+                            <Tag className="w-3 h-3" />
+                            {tag.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <button
@@ -428,6 +511,13 @@ export default function FolderView({ refreshTrigger, initialFolderId }: FolderVi
                       title="Preview file"
                     >
                       <Eye className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => setTagAssignmentFile({ id: file.id, name: file.filename })}
+                      className="p-2 text-pink-600 hover:bg-pink-50 rounded transition-colors"
+                      title="Manage tags"
+                    >
+                      <Tag className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => setShareItem({ type: 'file', id: file.id, name: file.filename })}
@@ -446,6 +536,13 @@ export default function FolderView({ refreshTrigger, initialFolderId }: FolderVi
                       ) : (
                         <Copy className="w-5 h-5" />
                       )}
+                    </button>
+                    <button
+                      onClick={() => toggleFavorite('file', file.id, !!file.is_favorite)}
+                      className="p-2 text-yellow-600 hover:bg-yellow-50 rounded transition-colors"
+                      title={file.is_favorite ? "Remove from favorites" : "Add to favorites"}
+                    >
+                      <Star className={`w-5 h-5 ${file.is_favorite ? 'fill-yellow-500' : ''}`} />
                     </button>
                     <button
                       onClick={() => handleDeleteFile(file.id)}
@@ -561,6 +658,16 @@ export default function FolderView({ refreshTrigger, initialFolderId }: FolderVi
           filename={previewFile.filename}
           mimeType={previewFile.mimetype}
           onClose={() => setPreviewFile(null)}
+        />
+      )}
+      
+      {/* Tag Assignment Modal */}
+      {tagAssignmentFile && (
+        <TagAssignment
+          fileId={tagAssignmentFile.id}
+          fileName={tagAssignmentFile.name}
+          onClose={() => setTagAssignmentFile(null)}
+          onTagsUpdated={() => loadFolderContents(currentFolderId)}
         />
       )}
     </div>

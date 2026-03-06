@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once 'activity.php';
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: DELETE, OPTIONS');
@@ -35,7 +36,7 @@ if (!isset($_GET['id'])) {
 
 try {
     // Get file info first and check ownership
-    $stmt = $conn->prepare("SELECT stored_filename, user_id FROM files WHERE id = :id");
+    $stmt = $conn->prepare("SELECT id, filename, stored_filename, file_size, user_id, deleted_at FROM files WHERE id = :id");
     $stmt->execute([':id' => $_GET['id']]);
     $file = $stmt->fetch();
     
@@ -52,21 +53,18 @@ try {
         exit;
     }
     
-    $storedFilename = basename($file['stored_filename']);
-    $uploadDir = __DIR__ . '/../uploads/';
-    $filePath = $uploadDir . $storedFilename;
+    // Soft delete - move to trash (don't delete physical file yet)
+    $stmt = $conn->prepare("UPDATE files SET deleted_at = NOW(), deleted_by = ? WHERE id = ?");
+    $stmt->execute([$user['user_id'], $_GET['id']]);
     
-    // Try to delete physical file (ignore if doesn't exist)
-    if (file_exists($filePath)) {
-        unlink($filePath);
-    }
+    // Update storage_used (file is still counted while in trash)
+    // Storage will be freed when permanently deleted from trash
     
-    // Delete from database
-    $stmt = $conn->prepare("DELETE FROM files WHERE id = :id");
-    $stmt->execute([':id' => $_GET['id']]);
+    // Log activity
+    logActivity($conn, $user['user_id'], 'delete', 'file', $file['id'], $file['filename'], null);
     
     http_response_code(200);
-    echo json_encode(['success' => true]);
+    echo json_encode(['success' => true, 'message' => 'File moved to trash']);
     
 } catch(PDOException $e) {
     http_response_code(500);

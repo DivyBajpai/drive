@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once 'activity.php';
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -30,6 +31,23 @@ if (!$user) {
 if (!isset($_FILES['file']) || !isset($_POST['stored_filename']) || !isset($_POST['share_token'])) {
     http_response_code(400);
     echo json_encode(['error' => 'Missing required parameters']);
+    exit;
+}
+
+// Check storage quota
+$fileSize = $_FILES['file']['size'];
+$stmt = $conn->prepare("SELECT storage_quota, storage_used FROM users WHERE id = ?");
+$stmt->execute([$user['user_id']]);
+$storage = $stmt->fetch();
+
+if ($storage && $storage['storage_used'] + $fileSize > $storage['storage_quota']) {
+    http_response_code(413); // Payload Too Large
+    echo json_encode([
+        'error' => 'Storage quota exceeded',
+        'quota' => (int)$storage['storage_quota'],
+        'used' => (int)$storage['storage_used'],
+        'file_size' => (int)$fileSize
+    ]);
     exit;
 }
 
@@ -92,6 +110,13 @@ if (move_uploaded_file($_FILES['file']['tmp_name'], $targetPath)) {
             ':mime_type' => $mimeType,
             ':share_token' => $shareToken
         ]);
+        
+        // Update storage_used
+        $stmt = $conn->prepare("UPDATE users SET storage_used = storage_used + ? WHERE id = ?");
+        $stmt->execute([$fileSize, $user['user_id']]);
+        
+        // Log activity
+        logActivity($conn, $user['user_id'], 'upload', 'file', $id, $filename, null);
         
         http_response_code(200);
         echo json_encode([

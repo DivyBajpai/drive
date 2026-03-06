@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once 'config.php';
+require_once 'activity.php';
 
 $conn = getDbConnection();
 $user = getCurrentUser($conn);
@@ -105,6 +106,9 @@ header('Content-Disposition: inline; filename="' . $file['filename'] . '"');
 // Cache control for better performance
 header('Cache-Control: private, max-age=3600');
 header('Content-Length: ' . filesize($filePath));
+
+// Log activity
+logActivity($conn, $userId, 'preview', 'file', $fileId, $file['filename'], null);
 
 // Output file
 readfile($filePath);

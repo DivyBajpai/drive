@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 if (isset($_GET['id'])) {
     // Authenticated download by file ID
     require_once 'config.php';
+    require_once 'activity.php';
     
     $conn = getDbConnection();
     $user = getCurrentUser($conn);
@@ -74,6 +75,9 @@ if (isset($_GET['id'])) {
     
     $storedFilename = $file['stored_filename'];
     $originalFilename = $file['filename'];
+    
+    // Log activity
+    logActivity($conn, $userId, 'download', 'file', $fileId, $originalFilename, null);
     
 } else if (isset($_GET['file']) && isset($_GET['name'])) {
     // Legacy non-authenticated download

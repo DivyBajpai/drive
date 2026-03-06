@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Share2, LogOut, Users, Files, UserCheck } from 'lucide-react';
+import { Share2, LogOut, Users, Files, UserCheck, BarChart3, Trash2 } from 'lucide-react';
 import FileUpload from './components/FileUpload';
 import FolderView from './components/FolderView';
 import SharedFileView from './components/SharedFileView';
@@ -7,9 +7,13 @@ import SharedFolderView from './components/SharedFolderView';
 import SharedWithMe from './components/SharedWithMe';
 import Login from './components/Login';
 import AdminPanel from './components/AdminPanel';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
+import StorageQuota from './components/StorageQuota';
+import Search from './components/Search';
+import TrashBin from './components/TrashBin';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-type TabType = 'files' | 'shared' | 'admin';
+type TabType = 'files' | 'shared' | 'analytics' | 'trash' | 'admin';
 
 function AppContent() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -104,44 +108,76 @@ function AppContent() {
           </div>
 
           {/* Tabs */}
-          <div className="mt-6 flex justify-center gap-2">
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
             <button
               onClick={() => setActiveTab('files')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
                 activeTab === 'files'
                   ? 'bg-blue-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <Files className="w-5 h-5" />
+              <Files className="w-4 h-4" />
               My Files
             </button>
             <button
               onClick={() => setActiveTab('shared')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
                 activeTab === 'shared'
                   ? 'bg-blue-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <UserCheck className="w-5 h-5" />
+              <UserCheck className="w-4 h-4" />
               Shared with Me
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
+                activeTab === 'analytics'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              Analytics
+            </button>
+            <button
+              onClick={() => setActiveTab('trash')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
+                activeTab === 'trash'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Trash2 className="w-4 h-4" />
+              Trash
             </button>
             {user.is_admin && (
               <button
                 onClick={() => setActiveTab('admin')}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
                   activeTab === 'admin'
                     ? 'bg-blue-600 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                <Users className="w-5 h-5" />
-                User Management
+                <Users className="w-4 h-4" />
+                Users
               </button>
             )}
           </div>
+
+          {/* Search Bar */}
+          <div className="mt-6 max-w-2xl mx-auto">
+            <Search />
+          </div>
         </header>
+
+        {/* Storage Quota */}
+        <div className="mb-6 max-w-md mx-auto">
+          <StorageQuota refreshTrigger={refreshTrigger} />
+        </div>
 
         {activeTab === 'files' ? (
           <div className="space-y-8">
@@ -158,6 +194,14 @@ function AppContent() {
         ) : activeTab === 'shared' ? (
           <section className="bg-white rounded-lg shadow-lg p-6">
             <SharedWithMe />
+          </section>
+        ) : activeTab === 'analytics' ? (
+          <section className="bg-white rounded-lg shadow-lg p-6">
+            <AnalyticsDashboard isAdmin={user.is_admin === 1} />
+          </section>
+        ) : activeTab === 'trash' ? (
+          <section className="bg-white rounded-lg shadow-lg p-6">
+            <TrashBin />
           </section>
         ) : (
           <section className="bg-white rounded-lg shadow-lg p-6">

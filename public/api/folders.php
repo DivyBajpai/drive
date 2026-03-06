@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once 'config.php';
+require_once 'activity.php';
 
 $conn = getDbConnection();
 $user = getCurrentUser($conn);
@@ -196,6 +197,9 @@ try {
         $stmt = $conn->prepare("INSERT INTO folders (id, name, user_id, parent_folder_id) VALUES (?, ?, ?, ?)");
         $stmt->execute([$folderId, $folderName, $userId, $parentFolderId]);
         
+        // Log activity
+        logActivity($conn, $userId, 'create_folder', 'folder', $folderId, $folderName, null);
+        
         http_response_code(201);
         echo json_encode([
             'success' => true,
@@ -228,7 +232,7 @@ try {
         }
         
         // Verify ownership
-        $stmt = $conn->prepare("SELECT user_id, parent_folder_id FROM folders WHERE id = ?");
+        $stmt = $conn->prepare("SELECT user_id, parent_folder_id, name FROM folders WHERE id = ?");
         $stmt->execute([$folderId]);
         $folder = $stmt->fetch();
         
@@ -257,6 +261,10 @@ try {
         $stmt = $conn->prepare("UPDATE folders SET name = ? WHERE id = ?");
         $stmt->execute([$newName, $folderId]);
         
+        // Log activity
+        $details = "Renamed from '{$folder['name']}' to '{$newName}'";
+        logActivity($conn, $userId, 'rename_folder', 'folder', $folderId, $newName, $details);
+        
         http_response_code(200);
         echo json_encode(['success' => true, 'message' => 'Folder renamed successfully']);
         exit;
@@ -273,7 +281,7 @@ try {
         }
         
         // Verify ownership
-        $stmt = $conn->prepare("SELECT user_id FROM folders WHERE id = ?");
+        $stmt = $conn->prepare("SELECT user_id, name FROM folders WHERE id = ?");
         $stmt->execute([$folderId]);
         $folder = $stmt->fetch();
         
@@ -321,6 +329,9 @@ try {
         // Delete folder (CASCADE will handle files and subfolders in DB)
         $stmt = $conn->prepare("DELETE FROM folders WHERE id = ?");
         $stmt->execute([$folderId]);
+        
+        // Log activity
+        logActivity($conn, $userId, 'delete_folder', 'folder', $folderId, $folder['name'], null);
         
         http_response_code(200);
         echo json_encode(['success' => true, 'message' => 'Folder deleted successfully']);
