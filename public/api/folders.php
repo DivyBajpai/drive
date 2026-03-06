@@ -26,22 +26,50 @@ $userId = $user['user_id'];
 // Helper function to check if user has access to a folder
 function hasAccessToFolder($conn, $folderId, $userId) {
     // Check if user owns the folder
-    $stmt = $conn->prepare("SELECT user_id FROM folders WHERE id = ?");
+    $stmt = $conn->prepare("SELECT user_id, parent_folder_id FROM folders WHERE id = ?");
     $stmt->execute([$folderId]);
     $folder = $stmt->fetch();
     
-    if ($folder && $folder['user_id'] === $userId) {
+    if (!$folder) {
+        return false;
+    }
+    
+    if ($folder['user_id'] === $userId) {
         return true;
     }
     
-    // Check if folder is shared with user
+    // Check if this folder is directly shared with user
     $stmt = $conn->prepare("
         SELECT id FROM shares 
         WHERE resource_type = 'folder' AND resource_id = ? AND shared_with_id = ?
     ");
     $stmt->execute([$folderId, $userId]);
     
-    return $stmt->fetch() !== false;
+    if ($stmt->fetch()) {
+        return true;
+    }
+    
+    // Check if any parent folder is shared with user
+    $currentId = $folder['parent_folder_id'];
+    while ($currentId) {
+        $stmt = $conn->prepare("
+            SELECT id FROM shares 
+            WHERE resource_type = 'folder' AND resource_id = ? AND shared_with_id = ?
+        ");
+        $stmt->execute([$currentId, $userId]);
+        
+        if ($stmt->fetch()) {
+            return true;
+        }
+        
+        // Get parent of current folder
+        $stmt = $conn->prepare("SELECT parent_folder_id FROM folders WHERE id = ?");
+        $stmt->execute([$currentId]);
+        $parent = $stmt->fetch();
+        $currentId = $parent ? $parent['parent_folder_id'] : null;
+    }
+    
+    return false;
 }
 
 try {
@@ -58,10 +86,11 @@ try {
                 exit;
             }
             
-            $stmt = $conn->prepare("SELECT * FROM folders WHERE parent_folder_id = ? AND user_id = ? ORDER BY name ASC");
-            $stmt->execute([$folderId, $userId]);
+            // Show all subfolders in shared folder (no user_id filter)
+            $stmt = $conn->prepare("SELECT * FROM folders WHERE parent_folder_id = ? ORDER BY name ASC");
+            $stmt->execute([$folderId]);
         } else {
-            // Root level folders
+            // Root level folders - only owned by user
             $stmt = $conn->prepare("SELECT * FROM folders WHERE parent_folder_id IS NULL AND user_id = ? ORDER BY name ASC");
             $stmt->execute([$userId]);
         }
@@ -70,13 +99,14 @@ try {
         
         // Get files in current location
         if ($folderId) {
+            // Show all files in shared folder (no user_id filter)
             $stmt = $conn->prepare("
                 SELECT id, filename, file_size as filesize, mime_type as mimetype, share_token as shared_token, uploaded_at 
                 FROM files 
-                WHERE folder_id = ? AND user_id = ? 
+                WHERE folder_id = ? 
                 ORDER BY uploaded_at DESC
             ");
-            $stmt->execute([$folderId, $userId]);
+            $stmt->execute([$folderId]);
         } else {
             // Root level files (no folder)
             $stmt = $conn->prepare("
