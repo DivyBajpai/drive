@@ -15,6 +15,7 @@ function AppContent() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [folderToken, setFolderToken] = useState<string | null>(null);
+  const [initialFolderId, setInitialFolderId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('files');
   const { user, loading, logout } = useAuth();
 
@@ -24,13 +25,19 @@ function AppContent() {
     const params = new URLSearchParams(window.location.search);
     const shareParam = params.get('share');
     const folderParam = params.get('folder');
+    const folderIdParam = params.get('folderId');
     console.log('Share token:', shareParam);
     console.log('Folder token:', folderParam);
+    console.log('Folder ID:', folderIdParam);
     if (shareParam) {
       setShareToken(shareParam);
     }
     if (folderParam) {
       setFolderToken(folderParam);
+    }
+    if (folderIdParam) {
+      setInitialFolderId(folderIdParam);
+      setActiveTab('files');
     }
   }, []);
 
@@ -145,7 +152,7 @@ function AppContent() {
 
             <section className="bg-white rounded-lg shadow-lg p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">Your Files</h2>
-              <FolderView refreshTrigger={refreshTrigger} />
+              <FolderView refreshTrigger={refreshTrigger} initialFolderId={initialFolderId} />
             </section>
           </div>
         ) : activeTab === 'shared' ? (

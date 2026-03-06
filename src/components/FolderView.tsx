@@ -41,13 +41,14 @@ interface Breadcrumb {
 
 interface FolderViewProps {
   refreshTrigger: number;
+  initialFolderId?: string | null;
 }
 
-export default function FolderView({ refreshTrigger }: FolderViewProps) {
+export default function FolderView({ refreshTrigger, initialFolderId }: FolderViewProps) {
   const [folders, setFolders] = useState<FolderRecord[]>([]);
   const [files, setFiles] = useState<FileRecord[]>([]);
   const [breadcrumbs, setBreadcrumbs] = useState<Breadcrumb[]>([]);
-  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(initialFolderId || null);
   const [loading, setLoading] = useState(true);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   
@@ -58,6 +59,13 @@ export default function FolderView({ refreshTrigger }: FolderViewProps) {
   
   // Internal sharing
   const [shareItem, setShareItem] = useState<{ type: 'file' | 'folder', id: string, name: string } | null>(null);
+
+  // Update currentFolderId if initialFolderId changes
+  useEffect(() => {
+    if (initialFolderId !== undefined) {
+      setCurrentFolderId(initialFolderId);
+    }
+  }, [initialFolderId]);
 
   useEffect(() => {
     loadFolderContents(currentFolderId);
