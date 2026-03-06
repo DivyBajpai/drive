@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart3, Users, Files, HardDrive, Download, TrendingUp, Activity } from 'lucide-react';
 
-const API_BASE = 'https://origincreativeagency.com/newcloud/api';
+const API_BASE = '/api';
 
 interface SystemAnalytics {
   total_users: number;

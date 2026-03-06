@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Download, X, Upload, RotateCcw, User } from 'lucide-react';
 
-const API_URL = 'https://origincreativeagency.com/newcloud/api';
+const API_URL = '/api';
 
 interface FileVersion {
   id: string;

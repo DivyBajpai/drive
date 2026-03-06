@@ -19,7 +19,7 @@ import ShareModal from './ShareModal';
 import FilePreview from './FilePreview';
 import TagAssignment from './TagAssignment';
 
-const API_BASE = 'https://origincreativeagency.com/newcloud/api';
+const API_BASE = '/api';
 
 interface TagItem {
   id: string;

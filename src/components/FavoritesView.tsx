@@ -15,7 +15,7 @@ import FilePreview from './FilePreview';
 import ShareModal from './ShareModal';
 import TagAssignment from './TagAssignment';
 
-const API_URL = 'https://origincreativeagency.com/newcloud/api';
+const API_URL = '/api';
 
 interface TagItem {
   id: string;

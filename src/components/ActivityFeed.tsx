@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, Download, Upload, Eye, Share2, Trash2, FolderPlus, Tag, Star, Filter } from 'lucide-react';
 
-const API_URL = 'https://origincreativeagency.com/newcloud/api';
+const API_URL = '/api';
 
 interface ActivityItem {
   id: string;

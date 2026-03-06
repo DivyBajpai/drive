@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Download, File, Folder, User, Eye } from 'lucide-react';
 import FilePreview from './FilePreview';
 
-const API_BASE = 'https://origincreativeagency.com/newcloud/api';
+const API_BASE = '/api';
 
 interface SharedFile {
   id: string;

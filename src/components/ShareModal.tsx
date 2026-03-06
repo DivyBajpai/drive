@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, UserPlus, Mail, Trash2 } from 'lucide-react';
 
-const API_BASE = 'https://origincreativeagency.com/newcloud/api';
+const API_BASE = '/api';
 
 interface ShareModalProps {
   resourceType: 'file' | 'folder';

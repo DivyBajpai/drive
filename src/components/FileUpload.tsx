@@ -5,7 +5,7 @@ interface FileUploadProps {
   onUploadComplete: () => void;
 }
 
-const API_BASE = 'https://origincreativeagency.com/newcloud/api';
+const API_BASE = '/api';
 
 export default function FileUpload({ onUploadComplete }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);

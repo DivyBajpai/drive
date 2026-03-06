@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Download, ExternalLink } from 'lucide-react';
 
-const API_BASE = 'https://origincreativeagency.com/newcloud/api';
+const API_BASE = '/api';
 
 interface FilePreviewProps {
   fileId: string;

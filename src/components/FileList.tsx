@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { File, Download, Copy, Check, Trash2 } from 'lucide-react';
 
-const API_BASE = 'https://origincreativeagency.com/newcloud/api';
+const API_BASE = '/api';
 
 interface FileRecord {
   id: string;

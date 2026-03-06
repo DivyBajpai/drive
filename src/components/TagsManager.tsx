@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Tag, Plus, Edit2, Trash2, X, Check } from 'lucide-react';
 
-const API_URL = 'https://origincreativeagency.com/newcloud/api';
+const API_URL = '/api';
 
 interface TagItem {
   id: string;
