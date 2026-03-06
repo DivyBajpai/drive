@@ -78,11 +78,13 @@ export default function FilePreview({ fileId, filename, mimeType, onClose }: Fil
     }
   };
 
-  const isImage = mimeType.startsWith('image/');
-  const isPdf = mimeType === 'application/pdf';
-  const isVideo = mimeType.startsWith('video/');
-  const isAudio = mimeType.startsWith('audio/');
-  const isText = mimeType.startsWith('text/') || mimeType === 'application/json';
+  // Defensive checks for mimeType
+  const safeType = mimeType || 'application/octet-stream';
+  const isImage = safeType.startsWith('image/');
+  const isPdf = safeType === 'application/pdf';
+  const isVideo = safeType.startsWith('video/');
+  const isAudio = safeType.startsWith('audio/');
+  const isText = safeType.startsWith('text/') || safeType === 'application/json';
   
   const canPreview = isImage || isPdf || isVideo || isAudio || isText;
 
@@ -93,7 +95,7 @@ export default function FilePreview({ fileId, filename, mimeType, onClose }: Fil
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-semibold text-gray-900 truncate">{filename}</h3>
-            <p className="text-sm text-gray-500">{mimeType}</p>
+            <p className="text-sm text-gray-500">{safeType}</p>
           </div>
           <div className="flex items-center gap-2 ml-4">
             <button
