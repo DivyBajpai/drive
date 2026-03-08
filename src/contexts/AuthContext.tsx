@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { API_BASE } from '../config/api';
 
 interface User {
   id: string;
@@ -28,8 +29,6 @@ export function useAuth() {
 interface AuthProviderProps {
   children: ReactNode;
 }
-
-const API_BASE = '/api';
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);

@@ -1,4 +1,8 @@
 <?php
+// Prevent any output before headers
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -197,8 +201,12 @@ try {
         $stmt = $conn->prepare("INSERT INTO folders (id, name, user_id, parent_folder_id) VALUES (?, ?, ?, ?)");
         $stmt->execute([$folderId, $folderName, $userId, $parentFolderId]);
         
-        // Log activity
-        logActivity($conn, $userId, 'create_folder', 'folder', $folderId, $folderName, null);
+        // Log activity (optional - won't fail if table doesn't exist)
+        try {
+            logActivity($conn, $userId, 'create_folder', 'folder', $folderId, $folderName, null);
+        } catch (Exception $e) {
+            error_log("Activity log failed: " . $e->getMessage());
+        }
         
         http_response_code(201);
         echo json_encode([
@@ -261,9 +269,13 @@ try {
         $stmt = $conn->prepare("UPDATE folders SET name = ? WHERE id = ?");
         $stmt->execute([$newName, $folderId]);
         
-        // Log activity
-        $details = "Renamed from '{$folder['name']}' to '{$newName}'";
-        logActivity($conn, $userId, 'rename_folder', 'folder', $folderId, $newName, $details);
+        // Log activity (optional - won't fail if table doesn't exist)
+        try {
+            $details = "Renamed from '{$folder['name']}' to '{$newName}'";
+            logActivity($conn, $userId, 'rename_folder', 'folder', $folderId, $newName, $details);
+        } catch (Exception $e) {
+            error_log("Activity log failed: " . $e->getMessage());
+        }
         
         http_response_code(200);
         echo json_encode(['success' => true, 'message' => 'Folder renamed successfully']);
@@ -330,8 +342,12 @@ try {
         $stmt = $conn->prepare("DELETE FROM folders WHERE id = ?");
         $stmt->execute([$folderId]);
         
-        // Log activity
-        logActivity($conn, $userId, 'delete_folder', 'folder', $folderId, $folder['name'], null);
+        // Log activity (optional - won't fail if table doesn't exist)
+        try {
+            logActivity($conn, $userId, 'delete_folder', 'folder', $folderId, $folder['name'], null);
+        } catch (Exception $e) {
+            error_log("Activity log failed: " . $e->getMessage());
+        }
         
         http_response_code(200);
         echo json_encode(['success' => true, 'message' => 'Folder deleted successfully']);

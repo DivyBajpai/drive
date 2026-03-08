@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Download, File, Folder, User, Eye } from 'lucide-react';
 import FilePreview from './FilePreview';
-
-const API_BASE = '/api';
+import { API_BASE } from '../config/api';
 
 interface SharedFile {
   id: string;

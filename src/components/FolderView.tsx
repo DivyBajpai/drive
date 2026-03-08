@@ -18,8 +18,7 @@ import {
 import ShareModal from './ShareModal';
 import FilePreview from './FilePreview';
 import TagAssignment from './TagAssignment';
-
-const API_BASE = '/api';
+import { API_BASE } from '../config/api';
 
 interface TagItem {
   id: string;

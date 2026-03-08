@@ -1,4 +1,8 @@
 <?php
+// Prevent any output before headers
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -94,9 +98,13 @@ try {
                 $stmt = $conn->prepare("INSERT INTO file_tags (file_id, tag_id) VALUES (?, ?)");
                 $stmt->execute([$fileId, $tagId]);
                 
-                // Log activity
-                $details = "Tagged with '{$tag['name']}'";
-                logActivity($conn, $userId, 'tag', 'file', $fileId, $file['filename'], $details);
+                // Log activity (optional)
+                try {
+                    $details = "Tagged with '{$tag['name']}'";
+                    logActivity($conn, $userId, 'tag', 'file', $fileId, $file['filename'], $details);
+                } catch (Exception $e) {
+                    error_log("Activity log failed: " . $e->getMessage());
+                }
                 
                 http_response_code(201);
                 echo json_encode(['success' => true, 'message' => 'Tag assigned']);
@@ -229,10 +237,14 @@ try {
             $stmt = $conn->prepare("DELETE FROM file_tags WHERE file_id = ? AND tag_id = ?");
             $stmt->execute([$fileId, $tagId]);
             
-            // Log activity
+            // Log activity (optional)
             if ($file) {
-                $details = "Removed tag '{$tag['name']}'";
-                logActivity($conn, $userId, 'untag', 'file', $fileId, $file['filename'], $details);
+                try {
+                    $details = "Removed tag '{$tag['name']}'";
+                    logActivity($conn, $userId, 'untag', 'file', $fileId, $file['filename'], $details);
+                } catch (Exception $e) {
+                    error_log("Activity log failed: " . $e->getMessage());
+                }
             }
             
             http_response_code(200);
@@ -252,7 +264,13 @@ try {
     echo json_encode(['error' => 'Method not allowed']);
     
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Server error: ' . $e->getMessage()]);
+    // If tables don't exist yet and it's a GET request, return empty array
+    if ($_SERVER['REQUEST_METHOD'] === 'GET' && strpos($e->getMessage(), "doesn't exist") !== false) {
+        http_response_code(200);
+        echo json_encode([]);
+    } else {
+        http_response_code(500);
+        echo json_encode(['error' => 'Server error: ' . $e->getMessage()]);
+    }
 }
 ?>

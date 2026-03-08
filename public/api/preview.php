@@ -1,4 +1,8 @@
 <?php
+// Prevent any output before headers
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
@@ -47,37 +51,42 @@ $hasAccess = false;
 if ($file['user_id'] === $userId) {
     $hasAccess = true;
 } else {
-    // Check if file is shared with user
-    $stmt = $conn->prepare("
-        SELECT id FROM shares 
-        WHERE resource_type = 'file' AND resource_id = ? AND shared_with_id = ?
-    ");
-    $stmt->execute([$fileId, $userId]);
-    if ($stmt->fetch()) {
-        $hasAccess = true;
-    }
-    
-    // Check if parent folder is shared with user (recursively)
-    if (!$hasAccess && $file['folder_id']) {
-        $currentFolderId = $file['folder_id'];
-        
-        while ($currentFolderId && !$hasAccess) {
-            $stmt = $conn->prepare("
-                SELECT id FROM shares 
-                WHERE resource_type = 'folder' AND resource_id = ? AND shared_with_id = ?
-            ");
-            $stmt->execute([$currentFolderId, $userId]);
-            if ($stmt->fetch()) {
-                $hasAccess = true;
-                break;
-            }
-            
-            // Get parent folder
-            $stmt = $conn->prepare("SELECT parent_folder_id FROM folders WHERE id = ?");
-            $stmt->execute([$currentFolderId]);
-            $parent = $stmt->fetch();
-            $currentFolderId = $parent ? $parent['parent_folder_id'] : null;
+    // Check if file is shared with user (only if shares table exists)
+    try {
+        $stmt = $conn->prepare("
+            SELECT id FROM shares 
+            WHERE resource_type = 'file' AND resource_id = ? AND shared_with_id = ?
+        ");
+        $stmt->execute([$fileId, $userId]);
+        if ($stmt->fetch()) {
+            $hasAccess = true;
         }
+        
+        // Check if parent folder is shared with user (recursively)
+        if (!$hasAccess && $file['folder_id']) {
+            $currentFolderId = $file['folder_id'];
+            
+            while ($currentFolderId && !$hasAccess) {
+                $stmt = $conn->prepare("
+                    SELECT id FROM shares 
+                    WHERE resource_type = 'folder' AND resource_id = ? AND shared_with_id = ?
+                ");
+                $stmt->execute([$currentFolderId, $userId]);
+                if ($stmt->fetch()) {
+                    $hasAccess = true;
+                    break;
+                }
+                
+                // Get parent folder
+                $stmt = $conn->prepare("SELECT parent_folder_id FROM folders WHERE id = ?");
+                $stmt->execute([$currentFolderId]);
+                $parent = $stmt->fetch();
+                $currentFolderId = $parent ? $parent['parent_folder_id'] : null;
+            }
+        }
+    } catch (Exception $e) {
+        // Shares table doesn't exist - deny access to unowned files
+        error_log("Share check failed: " . $e->getMessage());
     }
 }
 
@@ -107,8 +116,12 @@ header('Content-Disposition: inline; filename="' . $file['filename'] . '"');
 header('Cache-Control: private, max-age=3600');
 header('Content-Length: ' . filesize($filePath));
 
-// Log activity
-logActivity($conn, $userId, 'preview', 'file', $fileId, $file['filename'], null);
+// Log activity (optional)
+try {
+    logActivity($conn, $userId, 'preview', 'file', $fileId, $file['filename'], null);
+} catch (Exception $e) {
+    error_log("Activity log failed: " . $e->getMessage());
+}
 
 // Output file
 readfile($filePath);

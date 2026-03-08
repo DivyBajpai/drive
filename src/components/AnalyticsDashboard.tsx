@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BarChart3, Users, Files, HardDrive, Download, TrendingUp, Activity } from 'lucide-react';
-
-const API_BASE = '/api';
+import { API_BASE } from '../config/api';
 
 interface SystemAnalytics {
   total_users: number;

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Download, X, Upload, RotateCcw, User } from 'lucide-react';
-
-const API_URL = '/api';
+import { API_BASE as API_URL } from '../config/api';
 
 interface FileVersion {
   id: string;
@@ -44,7 +43,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
   const loadVersions = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('session_token');
       const response = await fetch(`${API_URL}/versions.php?file_id=${fileId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -70,7 +69,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
 
     setUploading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('session_token');
       const formData = new FormData();
       formData.append('file', uploadFile);
       formData.append('file_id', fileId);
@@ -109,7 +108,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
 
   const downloadVersion = async (versionId: string, versionNumber: number) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('session_token');
       const url = `${API_URL}/versions.php?file_id=${fileId}&version_id=${versionId}`;
       
       const response = await fetch(url, {
@@ -142,7 +141,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('session_token');
       const response = await fetch(
         `${API_URL}/versions.php?file_id=${fileId}&version_id=${versionId}`,
         {

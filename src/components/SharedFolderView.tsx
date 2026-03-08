@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Folder, File, Download, Loader2 } from 'lucide-react';
-
-const API_BASE = '/api';
+import { API_BASE } from '../config/api';
 
 interface FileRecord {
   id: string;

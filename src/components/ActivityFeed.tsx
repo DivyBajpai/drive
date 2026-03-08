@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, Download, Upload, Eye, Share2, Trash2, FolderPlus, Tag, Star, Filter } from 'lucide-react';
-
-const API_URL = '/api';
+import { API_BASE as API_URL } from '../config/api';
 
 interface ActivityItem {
   id: string;
@@ -69,7 +68,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({ limit = 50 }) => {
 
   const loadActivities = async (currentOffset: number, reset: boolean = false) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('session_token');
       const params = new URLSearchParams({
         limit: limit.toString(),
         offset: currentOffset.toString(),

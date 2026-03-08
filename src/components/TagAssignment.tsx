@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Tag, X, Check } from 'lucide-react';
-
-const API_URL = '/api';
+import { API_BASE as API_URL } from '../config/api';
 
 interface TagItem {
   id: string;
@@ -29,7 +28,7 @@ const TagAssignment: React.FC<TagAssignmentProps> = ({ fileId, fileName, onClose
 
   const loadTags = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('session_token');
       const response = await fetch(`${API_URL}/tags.php`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -50,7 +49,7 @@ const TagAssignment: React.FC<TagAssignmentProps> = ({ fileId, fileName, onClose
   const loadFileTags = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('session_token');
       const response = await fetch(`${API_URL}/tags.php?file_id=${fileId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -77,7 +76,7 @@ const TagAssignment: React.FC<TagAssignmentProps> = ({ fileId, fileName, onClose
 
   const assignTag = async (tagId: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('session_token');
       const response = await fetch(`${API_URL}/tags.php`, {
         method: 'POST',
         headers: {
@@ -105,7 +104,7 @@ const TagAssignment: React.FC<TagAssignmentProps> = ({ fileId, fileName, onClose
 
   const removeTag = async (tagId: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('session_token');
       const response = await fetch(`${API_URL}/tags.php?id=${tagId}&file_id=${fileId}`, {
         method: 'DELETE',
         headers: {

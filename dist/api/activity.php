@@ -1,29 +1,5 @@
 <?php
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-header('Access-Control-Allow-Credentials: true');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
-
-require_once 'config.php';
-
-$conn = getDbConnection();
-$user = getCurrentUser($conn);
-
-if (!$user) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Authentication required']);
-    exit;
-}
-
-$userId = $user['user_id'];
-
-// Helper function to log activity
+// Helper function to log activity - available for include
 function logActivity($conn, $userId, $actionType, $resourceType, $resourceId, $resourceName, $details = null) {
     $activityId = generateUUID();
     $stmt = $conn->prepare("
@@ -33,9 +9,35 @@ function logActivity($conn, $userId, $actionType, $resourceType, $resourceId, $r
     $stmt->execute([$activityId, $userId, $actionType, $resourceType, $resourceId, $resourceName, $details]);
 }
 
-try {
-    // GET: Retrieve activity feed
-    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+// Only run endpoint logic if this file is accessed directly
+if (basename($_SERVER['PHP_SELF']) === basename(__FILE__)) {
+    header('Content-Type: application/json');
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization');
+    header('Access-Control-Allow-Credentials: true');
+
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        http_response_code(200);
+        exit;
+    }
+
+    require_once 'config.php';
+
+    $conn = getDbConnection();
+    $user = getCurrentUser($conn);
+
+    if (!$user) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Authentication required']);
+        exit;
+    }
+
+    $userId = $user['user_id'];
+
+    try {
+        // GET: Retrieve activity feed
+        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 50;
         $offset = isset($_GET['offset']) ? intval($_GET['offset']) : 0;
         $actionType = isset($_GET['action_type']) ? $_GET['action_type'] : null;
@@ -136,16 +138,5 @@ try {
     http_response_code(500);
     echo json_encode(['error' => 'Server error: ' . $e->getMessage()]);
 }
-
-// Export the logActivity function for use in other files
-if (!function_exists('logActivity')) {
-    function logActivity($conn, $userId, $actionType, $resourceType, $resourceId, $resourceName, $details = null) {
-        $activityId = generateUUID();
-        $stmt = $conn->prepare("
-            INSERT INTO activity_log (id, user_id, action_type, resource_type, resource_id, resource_name, details) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ");
-        $stmt->execute([$activityId, $userId, $actionType, $resourceType, $resourceId, $resourceName, $details]);
-    }
-}
+} // End of direct access check
 ?>

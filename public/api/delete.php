@@ -1,4 +1,8 @@
 <?php
+// Prevent any output before JSON
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+
 require_once 'config.php';
 require_once 'activity.php';
 
@@ -34,40 +38,56 @@ if (!isset($_GET['id'])) {
     exit;
 }
 
-try {
-    // Get file info first and check ownership
-    $stmt = $conn->prepare("SELECT id, filename, stored_filename, file_size, user_id, deleted_at FROM files WHERE id = :id");
-    $stmt->execute([':id' => $_GET['id']]);
-    $file = $stmt->fetch();
-    
-    if (!$file) {
-        http_response_code(404);
-        echo json_encode(['error' => 'File not found in database']);
-        exit;
-    }
-    
-    // Check if user owns the file
-    if ($file['user_id'] !== $user['user_id']) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Forbidden: You do not own this file']);
-        exit;
-    }
-    
-    // Soft delete - move to trash (don't delete physical file yet)
-    $stmt = $conn->prepare("UPDATE files SET deleted_at = NOW(), deleted_by = ? WHERE id = ?");
-    $stmt->execute([$user['user_id'], $_GET['id']]);
-    
-    // Update storage_used (file is still counted while in trash)
-    // Storage will be freed when permanently deleted from trash
-    
-    // Log activity
-    logActivity($conn, $user['user_id'], 'delete', 'file', $file['id'], $file['filename'], null);
-    
-    http_response_code(200);
-    echo json_encode(['success' => true, 'message' => 'File moved to trash']);
-    
-} catch(PDOException $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+// Get file info first and check ownership
+$stmt = $conn->prepare("SELECT id, filename, stored_filename, file_size, user_id FROM files WHERE id = ?");
+$stmt->execute([$_GET['id']]);
+$file = $stmt->fetch();
+
+if (!$file) {
+    http_response_code(404);
+    echo json_encode(['error' => 'File not found in database']);
+    exit;
 }
+
+// Check if user owns the file
+if ($file['user_id'] !== $user['user_id']) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Forbidden: You do not own this file']);
+    exit;
+}
+
+// Delete file from database
+$stmt = $conn->prepare("DELETE FROM files WHERE id = ?");
+$success = $stmt->execute([$_GET['id']]);
+
+if (!$success) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Failed to delete file from database']);
+    exit;
+}
+
+// Try to delete physical file
+$uploadDir = __DIR__ . '/../uploads/';
+$filePath = $uploadDir . $file['stored_filename'];
+if (file_exists($filePath)) {
+    @unlink($filePath); // Suppress errors if file can't be deleted
+}
+
+// Update storage_used if column exists
+try {
+    $stmt = $conn->prepare("UPDATE users SET storage_used = storage_used - ? WHERE id = ?");
+    $stmt->execute([$file['file_size'], $user['user_id']]);
+} catch (Exception $e) {
+    // Column doesn't exist, ignore
+}
+
+// Log activity (optional)
+try {
+    logActivity($conn, $user['user_id'], 'delete', 'file', $file['id'], $file['filename'], null);
+} catch (Exception $e) {
+    // Activity logging failed, ignore
+}
+
+http_response_code(200);
+echo json_encode(['success' => true, 'message' => 'File deleted successfully']);
 ?>

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { HardDrive, AlertTriangle } from 'lucide-react';
-
-const API_BASE = '/api';
+import { API_BASE } from '../config/api';
 
 interface StorageQuotaProps {
   refreshTrigger?: number;

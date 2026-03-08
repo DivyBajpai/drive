@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, UserPlus, Mail, Trash2 } from 'lucide-react';
-
-const API_BASE = '/api';
+import { API_BASE } from '../config/api';
 
 interface ShareModalProps {
   resourceType: 'file' | 'folder';

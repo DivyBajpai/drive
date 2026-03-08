@@ -1,4 +1,8 @@
 <?php
+// Prevent any output before headers
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
@@ -76,8 +80,12 @@ if (isset($_GET['id'])) {
     $storedFilename = $file['stored_filename'];
     $originalFilename = $file['filename'];
     
-    // Log activity
-    logActivity($conn, $userId, 'download', 'file', $fileId, $originalFilename, null);
+    // Log activity (optional)
+    try {
+        logActivity($conn, $userId, 'download', 'file', $fileId, $originalFilename, null);
+    } catch (Exception $e) {
+        error_log("Activity log failed: " . $e->getMessage());
+    }
     
 } else if (isset($_GET['file']) && isset($_GET['name'])) {
     // Legacy non-authenticated download

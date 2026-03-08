@@ -1,4 +1,8 @@
 <?php
+// Prevent any output before JSON
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+
 require_once 'config.php';
 require_once 'activity.php';
 
@@ -28,9 +32,22 @@ if (!$user) {
     exit;
 }
 
-if (!isset($_FILES['file']) || !isset($_POST['stored_filename']) || !isset($_POST['share_token'])) {
+// Debug info (remove after testing)
+if (!isset($_FILES['file'])) {
     http_response_code(400);
-    echo json_encode(['error' => 'Missing required parameters']);
+    echo json_encode(['error' => 'Missing required fields', 'debug' => 'No file uploaded']);
+    exit;
+}
+
+if (!isset($_POST['stored_filename'])) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Missing required fields', 'debug' => 'Missing stored_filename']);
+    exit;
+}
+
+if (!isset($_POST['share_token'])) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Missing required fields', 'debug' => 'Missing share_token']);
     exit;
 }
 
@@ -115,8 +132,13 @@ if (move_uploaded_file($_FILES['file']['tmp_name'], $targetPath)) {
         $stmt = $conn->prepare("UPDATE users SET storage_used = storage_used + ? WHERE id = ?");
         $stmt->execute([$fileSize, $user['user_id']]);
         
-        // Log activity
-        logActivity($conn, $user['user_id'], 'upload', 'file', $id, $filename, null);
+        // Log activity (optional - won't fail if table doesn't exist)
+        try {
+            logActivity($conn, $user['user_id'], 'upload', 'file', $id, $filename, null);
+        } catch (Exception $e) {
+            // Silently ignore activity log errors
+            error_log("Activity log failed: " . $e->getMessage());
+        }
         
         http_response_code(200);
         echo json_encode([

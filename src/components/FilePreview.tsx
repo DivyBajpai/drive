@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Download, ExternalLink } from 'lucide-react';
-
-const API_BASE = '/api';
+import { API_BASE } from '../config/api';
 
 interface FilePreviewProps {
   fileId: string;

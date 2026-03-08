@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Tag, Plus, Edit2, Trash2, X, Check } from 'lucide-react';
-
-const API_URL = '/api';
+import { API_BASE as API_URL } from '../config/api';
 
 interface TagItem {
   id: string;
@@ -38,7 +37,7 @@ const TagsManager: React.FC = () => {
 
   const loadTags = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('session_token');
       const response = await fetch(`${API_URL}/tags.php`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -66,7 +65,7 @@ const TagsManager: React.FC = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('session_token');
       const response = await fetch(`${API_URL}/tags.php`, {
         method: 'POST',
         headers: {
@@ -96,7 +95,7 @@ const TagsManager: React.FC = () => {
 
   const updateTag = async (tagId: string, name: string, color: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('session_token');
       const response = await fetch(`${API_URL}/tags.php?id=${tagId}`, {
         method: 'PUT',
         headers: {
@@ -125,7 +124,7 @@ const TagsManager: React.FC = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('session_token');
       const response = await fetch(`${API_URL}/tags.php?id=${tagId}`, {
         method: 'DELETE',
         headers: {

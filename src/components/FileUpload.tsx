@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { Upload, Loader2 } from 'lucide-react';
+import { API_BASE } from '../config/api';
 
 interface FileUploadProps {
   onUploadComplete: () => void;
 }
-
-const API_BASE = '/api';
 
 export default function FileUpload({ onUploadComplete }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
@@ -19,6 +18,12 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
   const handleUpload = async (file: File) => {
     setUploading(true);
     try {
+      const sessionToken = localStorage.getItem('session_token');
+      if (!sessionToken) {
+        alert('Please login first to upload files.');
+        return;
+      }
+
       const formData = new FormData();
       const shareToken = generateShareToken();
       const timestamp = Date.now();
@@ -34,11 +39,9 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
         formData.append('folder_id', currentFolderId);
       }
 
-      const sessionToken = localStorage.getItem('session_token');
-      const headers: HeadersInit = {};
-      if (sessionToken) {
-        headers['Authorization'] = `Bearer ${sessionToken}`;
-      }
+      const headers: HeadersInit = {
+        'Authorization': `Bearer ${sessionToken}`
+      };
 
       const response = await fetch(`${API_BASE}/upload.php`, {
         method: 'POST',
@@ -46,16 +49,25 @@ export default function FileUpload({ onUploadComplete }: FileUploadProps) {
         body: formData,
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error(`Server returned invalid response (${response.status})`);
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Upload failed');
+        if (response.status === 401) {
+          localStorage.removeItem('session_token');
+          throw new Error('Session expired. Please login again.');
+        }
+        throw new Error(data.error || `Upload failed (${response.status})`);
       }
 
       onUploadComplete();
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload file. Please try again.');
+      alert(error instanceof Error ? error.message : 'Failed to upload file. Please try again.');
     } finally {
       setUploading(false);
     }

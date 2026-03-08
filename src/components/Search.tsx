@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search as SearchIcon, File, Folder, Download, X, Loader } from 'lucide-react';
-
-const API_BASE = '/api';
+import { API_BASE } from '../config/api';
 
 interface SearchResult {
   files: FileResult[];

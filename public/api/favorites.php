@@ -1,4 +1,8 @@
 <?php
+// Prevent any output before headers
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
@@ -88,9 +92,13 @@ try {
             $stmt = $conn->prepare("UPDATE files SET is_favorite = ? WHERE id = ?");
             $stmt->execute([$newStatus, $resourceId]);
             
-            // Log activity
-            $action = $newStatus ? 'favorite' : 'unfavorite';
-            logActivity($conn, $userId, $action, 'file', $resourceId, $resource['filename'], null);
+            // Log activity (optional)
+            try {
+                $action = $newStatus ? 'favorite' : 'unfavorite';
+                logActivity($conn, $userId, $action, 'file', $resourceId, $resource['filename'], null);
+            } catch (Exception $e) {
+                error_log("Activity log failed: " . $e->getMessage());
+            }
             
         } else if ($resourceType === 'folder') {
             // Verify folder ownership
@@ -110,9 +118,13 @@ try {
             $stmt = $conn->prepare("UPDATE folders SET is_favorite = ? WHERE id = ?");
             $stmt->execute([$newStatus, $resourceId]);
             
-            // Log activity
-            $action = $newStatus ? 'favorite' : 'unfavorite';
-            logActivity($conn, $userId, $action, 'folder', $resourceId, $resource['name'], null);
+            // Log activity (optional)
+            try {
+                $action = $newStatus ? 'favorite' : 'unfavorite';
+                logActivity($conn, $userId, $action, 'folder', $resourceId, $resource['name'], null);
+            } catch (Exception $e) {
+                error_log("Activity log failed: " . $e->getMessage());
+            }
             
         } else {
             http_response_code(400);

@@ -14,8 +14,7 @@ import {
 import FilePreview from './FilePreview';
 import ShareModal from './ShareModal';
 import TagAssignment from './TagAssignment';
-
-const API_URL = '/api';
+import { API_BASE as API_URL } from '../config/api';
 
 interface TagItem {
   id: string;
@@ -76,7 +75,7 @@ const FavoritesView: React.FC<FavoritesViewProps> = ({ onNavigateToFolder }) => 
   const loadFavorites = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('session_token');
       const response = await fetch(`${API_URL}/favorites.php`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -118,7 +117,7 @@ const FavoritesView: React.FC<FavoritesViewProps> = ({ onNavigateToFolder }) => 
 
   const toggleFavorite = async (type: 'file' | 'folder', id: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('session_token');
       const response = await fetch(`${API_URL}/favorites.php`, {
         method: 'POST',
         headers: {
@@ -165,7 +164,7 @@ const FavoritesView: React.FC<FavoritesViewProps> = ({ onNavigateToFolder }) => 
   };
 
   const downloadFile = (fileId: string, filename: string) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('session_token');
     const url = `${API_URL}/download.php?id=${fileId}`;
     const link = document.createElement('a');
     link.href = url;

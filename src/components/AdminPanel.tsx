@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Users, Plus, Edit2, Trash2, Key, X, Shield, ShieldOff } from 'lucide-react';
-
-const API_BASE = '/api';
+import { API_BASE } from '../config/api';
 
 interface User {
   id: string;
